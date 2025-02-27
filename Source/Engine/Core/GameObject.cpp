@@ -1,0 +1,111 @@
+///////////////////////////////////////////////////////////////////////////////
+// Dependencies
+///////////////////////////////////////////////////////////////////////////////
+#include <Engine/Core/GameObject.hpp>
+#include <Engine/Core/Component.hpp>
+
+///////////////////////////////////////////////////////////////////////////////
+// Namespace tkd
+///////////////////////////////////////////////////////////////////////////////
+namespace tkd
+{
+
+///////////////////////////////////////////////////////////////////////////////
+GameObject::GameObject(const String& objectName)
+    : m_name(objectName)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+GameObject::~GameObject()
+{
+    for (auto& component : m_components) {
+        component->onDestroy();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void GameObject::start(void)
+{
+    for (auto& component : m_components) {
+        if (component->isEnabled()) {
+            component->start();
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void GameObject::update(float deltaTime)
+{
+    if (!m_active) {
+        return;
+    }
+
+    for (auto& component : m_components) {
+        if (component->isEnabled()) {
+            component->update(deltaTime);
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void GameObject::fixedUpdate(float fixedDeltaTime)
+{
+    if (!m_active) {
+        return;
+    }
+
+    for (auto& component : m_components) {
+        if (component->isEnabled()) {
+            component->fixedUpdate(fixedDeltaTime);
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+Vector<UPtr<Component>>& GameObject::getComponents(void)
+{
+    return (m_components);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void GameObject::removeComponent(Component* component)
+{
+    auto it = std::find_if(
+        m_components.begin(),
+        m_components.end(),
+        [component](const UPtr<Component>& other) {
+            return (other.get() == component);
+        }
+    );
+
+    if (it != m_components.end()) {
+        (*it)->onDestroy();
+        m_components.erase(it);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void GameObject::setActive(bool state)
+{
+    m_active = state;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool GameObject::isActive(void) const
+{
+    return (m_active);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+const String& GameObject::getName(void) const
+{
+    return (m_name);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void GameObject::setName(const String& name)
+{
+    m_name = name;
+}
+
+} // namespace tkd

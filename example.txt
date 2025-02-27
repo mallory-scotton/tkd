@@ -1,0 +1,98 @@
+class AudioSource : public Component {
+private:
+    sf::SoundBuffer buffer;
+    sf::Sound sound;
+    bool loaded = false;
+
+public:
+    bool LoadSound(const std::string& soundPath) {
+        loaded = buffer.loadFromFile(soundPath);
+        if (loaded) {
+            sound.setBuffer(buffer);
+        }
+        return loaded;
+    }
+
+    void Play() {
+        if (loaded) sound.play();
+    }
+
+    void SetVolume(float volume) {
+        sound.setVolume(volume);
+    }
+
+    void SetLoop(bool loop) {
+        sound.setLoop(loop);
+    }
+};
+
+class BoxCollider : public Component {
+private:
+    sf::FloatRect bounds;
+    Transform* transform = nullptr;
+
+public:
+    void Start() override {
+        transform = GetGameObject()->GetComponent<Transform>();
+    }
+
+    void SetSize(float width, float height) {
+        bounds.width = width;
+        bounds.height = height;
+    }
+
+    void Update(float deltaTime) override {
+        if (transform) {
+            bounds.left = transform->GetX() - bounds.width/2;
+            bounds.top = transform->GetY() - bounds.height/2;
+        }
+    }
+
+    bool Intersects(const BoxCollider* other) const {
+        return bounds.intersects(other->bounds);
+    }
+
+    const sf::FloatRect& GetBounds() const {
+        return bounds;
+    }
+};
+
+class AnimatedSprite : public Component {
+private:
+    SpriteRenderer* spriteRenderer = nullptr;
+    std::vector<sf::IntRect> frames;
+    float frameTime = 0.1f;
+    float elapsedTime = 0.0f;
+    int currentFrame = 0;
+    bool playing = false;
+
+public:
+    void Start() override {
+        spriteRenderer = GetGameObject()->GetComponent<SpriteRenderer>();
+    }
+
+    void AddAnimation(const std::vector<sf::IntRect>& animFrames, float animFrameTime) {
+        frames = animFrames;
+        frameTime = animFrameTime;
+    }
+
+    void Play() {
+        playing = true;
+        currentFrame = 0;
+        elapsedTime = 0.0f;
+        if (spriteRenderer && !frames.empty()) {
+            spriteRenderer->SetTextureRect(frames[0]);
+        }
+    }
+
+    void Update(float deltaTime) override {
+        if (!playing || frames.empty() || !spriteRenderer) return;
+
+        elapsedTime += deltaTime;
+        if (elapsedTime >= frameTime) {
+            elapsedTime -= frameTime;
+            currentFrame = (currentFrame + 1) % frames.size();
+            spriteRenderer->SetTextureRect(frames[currentFrame]);
+        }
+    }
+};
